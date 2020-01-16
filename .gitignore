@@ -1,6 +1,6 @@
 #Folders
-./results/
-./embeddings/fastText157/
+results/
+embeddings/fastText157/
 
 ### Compressed ###
 *.7z
