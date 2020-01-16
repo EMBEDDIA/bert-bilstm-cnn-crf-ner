@@ -664,10 +664,15 @@ class BERTBiLSTM:
 
 
     @staticmethod
-    def loadModel(modelPath,embeddings_file,use_fastext = False):
+    def loadModel(modelPath, bert_path_name, bert_cuda_device, embeddings_file, use_fastext = False):
         import h5py
         import json
         from .keraslayers.ChainCRF import create_custom_objects
+
+        f = h5py.File(modelPath, 'r')
+        if keras.__version__ != f.attrs.get('keras_version').decode('utf-8'):
+            print("The model was trained with a different version of Keras! " + f.attrs.get('keras_version').decode('utf-8') + " vs. " + keras.__version__)
+            print("The model might break")
 
         custom_layers = create_custom_objects()
         custom_layers['WeightedAverage'] = WeightedAverage
@@ -682,15 +687,14 @@ class BERTBiLSTM:
         # :: Read the config values for the embedding lookup function ::
         embeddings_path = params['embeddingsConfig']['embeddings_path']     
         bert_mode = params['embeddingsConfig']['bert_mode']
-        bert_path = params['embeddingsConfig']['bert_path']
+        #The location of the berth models could have changed and the configuration might be different
+        if bert_path_name == "":
+            bert_path_name = params['embeddingsConfig']['bert_path']
         bert_n_layers = params['embeddingsConfig']['bert_n_layers'] if 'bert_n_layers' in params['embeddingsConfig'] else None
-#TO REMOVE: ZAGREB DEMO ONLY
-#        base_dir ='/local2/users/jmoreno/data6Tbis2/' if True else '/data6T/'
-#        bert_path = base_dir + 'Datasets/BERT/cased_L-12_H-768_A-12/'
-#END TO REMOVE          
-        bert_cuda_device = -1  # Which GPU to use. -1 for CPU
+        if bert_cuda_device == "":
+            bert_cuda_device = -1  # Which GPU to use. -1 for CPU
     
-        embLookup = BERTWordEmbeddings(embeddings_file, bert_path, bert_mode=bert_mode, bert_cuda_device=bert_cuda_device,bert_n_layers=bert_n_layers) if not bert_n_layers is None else BERTWordEmbeddings(embeddings_file, bert_path, bert_mode=bert_mode, bert_cuda_device=bert_cuda_device)
+        embLookup = BERTWordEmbeddings(embeddings_file, bert_path_name, bert_mode=bert_mode, bert_cuda_device=bert_cuda_device, bert_n_layers=bert_n_layers) if not bert_n_layers is None else BERTWordEmbeddings(embeddings_file, bert_path_name, bert_mode=bert_mode, bert_cuda_device=bert_cuda_device)
         embLookup.use_fastext = use_fastext
 
         # :: Create new model object ::

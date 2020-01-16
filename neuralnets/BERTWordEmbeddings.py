@@ -155,27 +155,32 @@ class BERTWordEmbeddings:
     def batchLookup(self, sentences, feature_name):
         if feature_name == 'tokens':
             if self.word2Idx is None or self.embeddings is None:
-                self.word2Idx, self.embeddings = self.readEmbeddings(self.embeddings_path)
+
                 if self.use_fastext:
-                     self.ftmodel = load_model(self.embeddings_path+'.bin')
+                    self.ftmodel = load_model(self.embeddings_path+'.bin')
+                else:
+                    self.word2Idx, self.embeddings = self.readEmbeddings(self.embeddings_path)
 
             tokens_vectors = []
             oov = []
             for sentence in sentences:
                 per_token_embedding = []
                 for token in sentence['tokens']:
-                    vecId = self.word2Idx['UNKNOWN_TOKEN']
-                    vecVal = self.embeddings[vecId]
-                    if token in self.word2Idx:
-                        vecId = self.word2Idx[token]
-                        vecVal = self.embeddings[vecId]
-                    elif token.lower() in self.word2Idx:
-                        vecId = self.word2Idx[token.lower()]
-                        vecVal = self.embeddings[vecId]
+                    if self.use_fastext:
+                        vecVal = self.ftmodel.get_word_vector(token)
                     else:
-                        oov.append(token)
-                        if self.use_fastext:
-                           vecVal = self.ftmodel.get_word_vector(token)
+                        vecId = self.word2Idx['UNKNOWN_TOKEN']
+                        vecVal = self.embeddings[vecId]
+                        if token in self.word2Idx:
+                            vecId = self.word2Idx[token]
+                            vecVal = self.embeddings[vecId]
+                        elif token.lower() in self.word2Idx:
+                            vecId = self.word2Idx[token.lower()]
+                            vecVal = self.embeddings[vecId]
+                        else:
+                            oov.append(token)
+                        #if self.use_fastext:
+                        #   vecVal = self.ftmodel.get_word_vector(token)
                     per_token_embedding.append(vecVal)
                 per_token_embedding = np.asarray(per_token_embedding)
                 tokens_vectors.append(per_token_embedding)
