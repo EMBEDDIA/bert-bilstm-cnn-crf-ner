@@ -28,8 +28,6 @@ dependencies:
   - mkl_random=1.1.0=py36hd6b4f25_0
   - ncurses=6.1=he6710b0_1
   - ninja=1.9.0=py36hfd86e86_0
-  - numpy=1.17.4=py36hc1035e2_0
-  - numpy-base=1.17.4=py36hde5b4d6_0
   - olefile=0.46=py36_0
   - openssl=1.1.1d=h7b6447c_3
   - pillow=7.0.0=py36hb39fc2d_0
@@ -84,6 +82,7 @@ dependencies:
     - nbconvert==5.6.1
     - nbformat==5.0.3
     - notebook==6.0.2
+    - numpy==1.16.6
     - pandocfilters==1.4.2
     - parso==0.5.2
     - pexpect==4.7.0
@@ -92,6 +91,7 @@ dependencies:
     - prompt-toolkit==2.0.10
     - protobuf==3.11.2
     - ptyprocess==0.6.0
+    - pybind11==2.2.0
     - pygments==2.5.2
     - pyrsistent==0.15.7
     - python-dateutil==2.8.1
