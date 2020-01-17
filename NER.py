@@ -1,12 +1,11 @@
 import argparse
-import getopt
 import os
-import re
 import subprocess
-import sys
+
 import torch
-from util.preprocessing import addCharInformation, createMatrices, addCasingInformation, readCoNLL
+
 from neuralnets.BERTBiLSTM import BERTBiLSTM
+from util.preprocessing import addCharInformation, createMatrices, addCasingInformation
 
 
 def main():
