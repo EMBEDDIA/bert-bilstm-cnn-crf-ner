@@ -1,11 +1,22 @@
+#!/bin/sh
+
 LANG=$1
 
-mkdir fastText157
+DIR="${0%/*}"
 
-wget https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.$LANG.300.bin.gz --directory-prefix=./fastText157
+DIR=$DIR/fastText157
 
-gzip -dc <./fastText157/cc.$LANG.300.bin.gz > ./fastText157/cc.$LANG.300.vec.gz.top1.bin
+if [[ ! -d "$DIR" ]]
+then
+    mkdir $DIR
+fi
 
-rm ./fastText157/cc.$LANG.300.bin.gz
+wget https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.$LANG.300.bin.gz --directory-prefix=$DIR
 
-touch ./fastText157/cc.$LANG.300.vec.gz.top1
+echo "Unzipping file"
+gzip -dc <$DIR/cc.$LANG.300.bin.gz > $DIR/cc.$LANG.300.vec.gz.top1.bin
+
+echo "Cleaning $DIR"
+rm $DIR/cc.$LANG.300.bin.gz
+
+touch $DIR/cc.$LANG.300.vec.gz.top1
