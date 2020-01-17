@@ -10,10 +10,14 @@ from util.preprocessing import addCharInformation, createMatrices, addCasingInfo
 
 def main():
     arguments_parser = argparse.ArgumentParser()
-    arguments_parser.add_argument("-f", "--file", help="File to process", required=True)
-    arguments_parser.add_argument("-l", "--language", help="Language of the file to process", required=True)
-    arguments_parser.add_argument("-s", "--split", help="File needs to be split.", action="store_true")
-    arguments_parser.add_argument("-o", "--outputFile", help="Output file", default="")
+    required_arguments = arguments_parser.add_argument_group('required arguments')
+    required_arguments.add_argument("-f", "--file", help="File to process", required=True)
+    required_arguments.add_argument("-l", "--language", help="Language of the file to process", required=True)
+
+    optional_arguments = arguments_parser.add_argument_group('optional arguments')
+    optional_arguments.add_argument("-s", "--split", help="File needs to be split.", action="store_true")
+    optional_arguments.add_argument("-o", "--outputFile", help="Output file", default="")
+
     arguments = arguments_parser.parse_args()
     if arguments.outputFile == "":
         if not os.path.exists("./results"):
