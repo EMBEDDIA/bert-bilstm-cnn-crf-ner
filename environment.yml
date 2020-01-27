@@ -47,6 +47,7 @@ dependencies:
   - zstd=1.3.7=h0b5b093_0
   - pip:
     - absl-py==0.9.0
+    - aniso8601==8.0.0
     - astor==0.8.1
     - attrs==19.3.0
     - backcall==0.1.0
@@ -54,10 +55,13 @@ dependencies:
     - boto3==1.11.2
     - botocore==1.14.2
     - chardet==3.0.4
+    - click==7.0
     - decorator==4.4.1
     - defusedxml==0.6.0
     - docutils==0.15.2
     - entrypoints==0.3
+    - flask==1.1.1
+    - flask-restplus==0.13.0
     - gast==0.3.2
     - grpcio==1.26.0
     - h5py==2.10.0
@@ -66,6 +70,7 @@ dependencies:
     - importlib-metadata==1.4.0
     - ipykernel==5.1.3
     - ipython-genutils==0.2.0
+    - itsdangerous==1.1.0
     - jedi==0.15.2
     - jinja2==2.10.3
     - jmespath==0.9.4
@@ -96,6 +101,7 @@ dependencies:
     - pyrsistent==0.15.7
     - python-dateutil==2.8.1
     - pytorch-pretrained-bert==0.6.2
+    - pytz==2019.3
     - pyyaml==5.3
     - pyzmq==18.1.1
     - regex==2020.1.8
