@@ -8,7 +8,7 @@ from neuralnets.BERTBiLSTM import BERTBiLSTM
 from util.preprocessing import addCharInformation, createMatrices, addCasingInformation
 
 
-def main():
+def main_command():
     arguments_parser = argparse.ArgumentParser()
     required_arguments = arguments_parser.add_argument_group('required arguments')
     required_arguments.add_argument("-f", "--file", help="File to process", required=True)
@@ -19,12 +19,21 @@ def main():
     optional_arguments.add_argument("-o", "--outputFile", help="Output file", default="")
 
     arguments = arguments_parser.parse_args()
+
     if arguments.outputFile == "":
         if not os.path.exists("./results"):
             os.mkdir("./results")
         arguments.outputFile = f"./results/{arguments.language}.html"
+
     print(f"File to process: {arguments.file}")
     print(f"Language to process: {arguments.language}")
+    print(f"Output redirected to:", {arguments.outputFile})
+    split_text = loadText(arguments.file, arguments.split)
+    html = main(arguments.language, split_text)
+    printResults(html, arguments.outputFile)
+
+
+def main(language, split_text):
     # Which GPU to use for . -1 for CPU
     if torch.cuda.is_available():
         print("Using CUDA")
@@ -32,9 +41,8 @@ def main():
     else:
         print("Using CPU")
         bert_cuda_device = -1
-    lstm_model = loadModels(arguments.language, bert_cuda_device)
-    split_text = loadText(arguments.file, arguments.split)
-    predict(split_text, lstm_model, arguments.outputFile)
+    lstm_model = loadModels(language, bert_cuda_device)
+    return predict(split_text, lstm_model)
 
 
 def loadModels(lang, bert_cuda_device):
@@ -62,15 +70,20 @@ def loadText(file, split):
     else:
         split_text = [{'tokens': x.split()} for x in input_file.read().split("\n") if len(x) > 0]
     input_file.close()
+    processText(split_text)
+    return split_text
+
+
+def processText(split_text):
     addCharInformation(split_text)
     addCasingInformation(split_text)
     return split_text
 
 
-def predict(split_text, lstm_model, output_file):
+def predict(split_text, lstm_model):
     data_matrix = createMatrices(split_text, lstm_model.mappings, True)
     tags = lstm_model.tagSentences(data_matrix)
-    printResults(generateHTML(split_text, tags), output_file)
+    return generateHTML(split_text, tags)
 
 
 def printResults(results, output_file):
@@ -132,4 +145,4 @@ def generateHTML(sentences, tags):
 
 
 if __name__ == '__main__':
-    main()
+    main_command()
