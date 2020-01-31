@@ -18,5 +18,3 @@ gzip -dc <$DIR/cc.$LANG.300.bin.gz > $DIR/cc.$LANG.300.vec.gz.top1.bin
 
 echo "Cleaning $DIR"
 rm $DIR/cc.$LANG.300.bin.gz
-
-touch $DIR/cc.$LANG.300.vec.gz.top1

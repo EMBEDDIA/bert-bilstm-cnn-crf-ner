@@ -457,8 +457,7 @@ class BERTBiLSTM:
             if self.params['earlyStopping']  > 0 and no_improvement_since >= self.params['earlyStopping']:
                 logging.info("!!! Early stopping, no improvement after "+str(no_improvement_since)+" epochs !!!")
                 break
-            
-            
+
     def tagSentences(self, sentences):
         # Pad characters
         if 'characters' in self.params['featureNames']:
@@ -468,14 +467,18 @@ class BERTBiLSTM:
         for modelName, model in self.models.items():
             paddedPredLabels = self.predictLabels(model, sentences)
             predLabels = []
-            for idx in range(len(sentences)):
+            total_sentences = len(sentences)
+            processed_sentences = 0
+
+            for (idx, sentence) in enumerate(sentences):
                 unpaddedPredLabels = []
-                for tokenIdx in range(len(sentences[idx]['tokens'])):
-                    if sentences[idx]['tokens'][tokenIdx] != 0:  # Skip padding tokens
+                for (tokenIdx, token) in enumerate(sentence['tokens']):
+                    if token != 0:  # Skip padding tokens
                         unpaddedPredLabels.append(paddedPredLabels[idx][tokenIdx])
-
                 predLabels.append(unpaddedPredLabels)
-
+                processed_sentences += 1
+                print(f"Processed sentences: {processed_sentences}/{total_sentences}", end="\r")
+            print("\n")
             idx2Label = self.idx2Labels[modelName]
             labels[modelName] = [[idx2Label[tag] for tag in tagSentence] for tagSentence in predLabels]
 
@@ -495,7 +498,8 @@ class BERTBiLSTM:
     def predictLabels(self, model, sentences):
         predLabels = [None]*len(sentences)
         sentenceLengths = self.getSentenceLengths(sentences)
-        
+        total_sentences = len(sentences)
+        processed_sentences = 0
         for indices in sentenceLengths.values():   
             nnInput = self.getInputData(sentences, indices)
             predictions = model.predict(nnInput, verbose=False)
@@ -506,7 +510,10 @@ class BERTBiLSTM:
             for idx in indices:
                 predLabels[idx] = predictions[predIdx]    
                 predIdx += 1   
-        
+
+            processed_sentences += 1
+            print(f"Predicted sentences: {processed_sentences}/{total_sentences}", end="\r")
+        print("\n")
         return predLabels
 
     def getInputData(self, sentences, indices):
@@ -694,8 +701,7 @@ class BERTBiLSTM:
         if bert_cuda_device == "":
             bert_cuda_device = -1  # Which GPU to use. -1 for CPU
     
-        embLookup = BERTWordEmbeddings(embeddings_file, bert_path_name, bert_mode=bert_mode, bert_cuda_device=bert_cuda_device, bert_n_layers=bert_n_layers) if not bert_n_layers is None else BERTWordEmbeddings(embeddings_file, bert_path_name, bert_mode=bert_mode, bert_cuda_device=bert_cuda_device)
-        embLookup.use_fastext = use_fastext
+        embLookup = BERTWordEmbeddings(embeddings_file, use_fastext, bert_path_name, bert_mode=bert_mode, bert_cuda_device=bert_cuda_device, bert_n_layers=bert_n_layers) if not bert_n_layers is None else BERTWordEmbeddings(embeddings_file, bert_path_name, bert_mode=bert_mode, bert_cuda_device=bert_cuda_device)
 
         # :: Create new model object ::
         bilstm = BERTBiLSTM(embLookup, params)

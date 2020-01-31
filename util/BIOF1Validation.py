@@ -1,4 +1,6 @@
 from __future__ import print_function
+
+import itertools
 import logging
 """
 Computes the F1 score on BIO tagged data
@@ -16,6 +18,7 @@ def compute_f1_token_basis(predictions, correct, O_Label):
         f1 = 2.0 * prec * rec / (prec + rec);
         
     return prec, rec, f1
+
 
 def compute_precision_token_basis(guessed_sentences, correct_sentences, O_Label):
     assert(len(guessed_sentences) == len(correct_sentences))
@@ -40,6 +43,25 @@ def compute_precision_token_basis(guessed_sentences, correct_sentences, O_Label)
         precision = float(correctCount) / count
         
     return precision
+
+
+def computeMetrics(predictions, label_true):
+    model_name = list(predictions.keys())[0]
+    #predictions = predictions[model_name]
+    #label_pred = list(itertools.chain(*predictions))
+    label_pred = predictions[model_name]
+    #label_true = list(itertools.chain(*truth))
+
+    checkBIOEncoding(label_pred, 'No')
+
+    prec = compute_precision(label_pred, label_true)
+    rec = compute_precision(label_true, label_pred)
+
+    f1 = 0
+    if (rec + prec) > 0:
+        f1 = 2.0 * prec * rec / (prec + rec)
+
+    return prec, rec, f1
 
 
 def compute_f1(predictions, correct, idx2Label, correctBIOErrors='No', encodingScheme='BIO'): 
@@ -72,7 +94,7 @@ def compute_f1(predictions, correct, idx2Label, correctBIOErrors='No', encodingS
     
     f1 = 0
     if (rec+prec) > 0:
-        f1 = 2.0 * prec * rec / (prec + rec);
+        f1 = 2.0 * prec * rec / (prec + rec)
         
     return prec, rec, f1
 

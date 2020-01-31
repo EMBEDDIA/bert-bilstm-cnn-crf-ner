@@ -44,6 +44,7 @@ def perpareDataset(datasets, padOneTokenSentence=True):
     
     return outputPath
 
+
 def loadDatasetPickle(embeddingsPickle):
     """ Loads the cPickle file, that contains the word embeddings and the datasets """
     f = open(embeddingsPickle, 'rb')
@@ -51,6 +52,17 @@ def loadDatasetPickle(embeddingsPickle):
     f.close()
 
     return pklObjects['mappings'], pklObjects['data']
+
+
+def addCharAndCasingInformation(sentences):
+    for sentenceIdx in range(len(sentences)):
+        sentences[sentenceIdx]['characters'] = []
+        sentences[sentenceIdx]['casing'] = []
+        for tokenIdx in range(len(sentences[sentenceIdx]['tokens'])):
+            token = sentences[sentenceIdx]['tokens'][tokenIdx]
+            chars = [c for c in token]
+            sentences[sentenceIdx]['characters'].append(chars)
+            sentences[sentenceIdx]['casing'].append(getCasing(token))
 
 
 def addCharInformation(sentences):
@@ -61,6 +73,7 @@ def addCharInformation(sentences):
             token = sentences[sentenceIdx]['tokens'][tokenIdx]
             chars = [c for c in token]
             sentences[sentenceIdx]['characters'].append(chars)
+
 
 def addCasingInformation(sentences):
     """Adds information of the casing of words"""
@@ -106,6 +119,8 @@ def createMatrices(sentences, mappings, padOneTokenSentence):
     #symbols = (u"абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ", u"abvgdeejzijklmnoprstufhzcss_y_euaABVGDEEJZIJKLMNOPRSTUFHZCSS_Y_EUA")
     #tr = {ord(a):ord(b) for a, b in zip(*symbols)}
     data = []
+    total_sentences = len(sentences)
+    processed_sentences = 0
     for sentence in sentences:
         row = {name: [] for name in list(mappings.keys())}
         
@@ -142,7 +157,9 @@ def createMatrices(sentences, mappings, padOneTokenSentence):
                     row[mapping].append(0)
 
         data.append(row)
-
+        processed_sentences += 1
+        print(f"Sentences appended to the matrix: {processed_sentences}/{total_sentences}", end="\r")
+    print("\n")
     return data
     
   
