@@ -27,9 +27,9 @@ def perpareDataset(datasets, padOneTokenSentence=True):
         datasetColumns = dataset['columns']
         commentSymbol = dataset['commentSymbol']
 
-        trainData = 'data/%s/train.txt' % datasetName 
-        devData = 'data/%s/dev.txt' % datasetName 
-        testData = 'data/%s/test.txt' % datasetName 
+        trainData = '/home/adrian/DataSets/NER/%s/train.txt' % datasetName
+        devData = '/home/adrian/DataSets/NER/%s/dev.txt' % datasetName
+        testData = '/home/adrian/DataSets/NER/%s/test.txt' % datasetName
         paths = [trainData, devData, testData]
 
         logging.info("\n:: Transform "+datasetName+" dataset ::")

@@ -1,7 +1,6 @@
 from flask import Flask
 from flask_restplus import Api, Resource, reqparse
 from NER import getTags, generateOutput
-from util.DataSet import DataSet
 from util.preprocessing import addCharAndCasingInformation
 
 NER_API = Flask(__name__)
@@ -22,13 +21,10 @@ class NER(Resource):
 
         if args["text"] != "":
             print(args["text"])
-            split_text = [{'tokens': x.split()} for x in args["text"].split("\n") if len(x) > 0]
-            addCharAndCasingInformation(split_text)
-            data_set = DataSet()
-            data_set.setTokenizedSentences(split_text)
-            tags = getTags(language, data_set.getTokenizedSentences())
-            data_set.setPredictedTags(tags)
-            return generateOutput(data_set, False), 200
+            data_set = [{'tokens': x.split()} for x in args["text"].split("\n") if len(x) > 0]
+            addCharAndCasingInformation(data_set)
+            tags = getTags(language, data_set)
+            return generateOutput(data_set, tags, False), 200
 
         return "Text empty", 401
 

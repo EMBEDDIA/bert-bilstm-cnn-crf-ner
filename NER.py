@@ -7,10 +7,9 @@ import sys
 import torch
 
 from neuralnets.BERTBiLSTM import BERTBiLSTM
-from util import ThreeColumnData
-from util.DataSet import DataSet
-from util.BIOF1Validation import convertIOBtoBIO, computeMetrics
+from util.BIOF1Validation import computeMetrics
 from util.CoNLL import readCoNLL
+from util.XMLParser import parseXML
 from util.preprocessing import createMatrices, addCharAndCasingInformation
 
 
@@ -21,10 +20,10 @@ def main_command():
     required_arguments.add_argument("-l", "--language", help="Language of the file to process (en|hr)", required=True)
 
     optional_arguments = arguments_parser.add_argument_group('optional arguments')
-    optional_arguments.add_argument("-F", "--fileFormat", help="Format of input file [plain, conll, 3cIO, 3cIOB]. Default plain", default="plain")
+    optional_arguments.add_argument("-F", "--fileFormat", help="Format of input file [plain, tokens, IOB, XML_tokenized, XML_sentences]. Default plain", default="plain")
     optional_arguments.add_argument("-o", "--outputFile", help="Output file", default="")
     optional_arguments.add_argument("-H", "--HTMLFormat", help="Output file as HTML", action="store_true")
-    optional_arguments.add_argument("-e", "--evaluate", help="Evaluate (only valid with 3cIO or 3cIOB files)", action="store_true")
+    optional_arguments.add_argument("-e", "--evaluate", help="Evaluate (only valid with IOB files)", action="store_true")
 
     arguments = arguments_parser.parse_args()
 
@@ -37,24 +36,27 @@ def main_command():
     print(f"Language to process: {arguments.language}")
     print(f"Output redirected to:", {arguments.outputFile})
     data_set = loadText(arguments.file, arguments.fileFormat)
-    tags = getTags(arguments.language, data_set.getTokenizedSentences())
-    data_set.setPredictedTags(tags)
-    printResults(generateOutput(data_set, arguments.HTMLFormat), arguments.outputFile)
-    if arguments.evaluate:
-        if data_set.hasTrueTags():
-            precision, recall, f1 = computeMetrics(data_set.getPreditedTags(), data_set.getTrueTags())
-            print(f"Precision: {precision}\nRecall: {recall}\n F1: {f1}")
-        else:
-            print("The data set isn't annotated with the true tags")
+    lstm_model = loadModels(arguments.language)
+    tags = getTags(data_set, lstm_model)
+    printResults(generateOutput(data_set, tags, arguments.HTMLFormat), arguments.outputFile)
+    if arguments.evaluate and arguments.fileFormat == "IOB":
+        truth = [sentence["format_IOB"] for sentence in data_set]
+        precision, recall, f1 = computeMetrics(tags, truth, arguments.fileFormat)
+        print(f"Precision: {precision}\nRecall: {recall}\n F1: {f1}")
 
 
-def generateOutput(data_set: DataSet, html_format):
+def generateOutput(data_set, tags, html_format):
     if html_format:
-        return generateHTML(data_set.getTokenizedSentences(), data_set.getPreditedTags())
-    return annotateText(data_set.getTokenizedSentences(), data_set.getPreditedTags())
+        return generateHTML(data_set, tags)
+    return annotateText(data_set, tags)
 
 
-def getTags(language, split_text):
+def getTags(data_set, lstm_model):
+    testMatrix = createMatrices(data_set, lstm_model.mappings, True)
+    return lstm_model.tagSentences(testMatrix)
+
+
+def loadModels(lang):
     # Which GPU to use for . -1 for CPU
     if torch.cuda.is_available():
         print("Using CUDA")
@@ -62,12 +64,8 @@ def getTags(language, split_text):
     else:
         print("Using CPU")
         bert_cuda_device = -1
-    lstm_model = loadModels(language, bert_cuda_device)
-    return predict(split_text, lstm_model)
 
-
-def loadModels(lang, bert_cuda_device):
-    bert_model_name = "bert-base-uncased"
+    bert_model_name = "bert-base-multilingual-cased"
     fasttext_embeddings = False
     if lang == "en":
         embeddings_file = './embeddings/komninos_english_embeddings.gz'
@@ -94,33 +92,23 @@ def loadModels(lang, bert_cuda_device):
 
 
 def loadText(file, file_format):
-    data_set = DataSet()
-    if file_format == "conll":
-        split_text = readCoNLL(file, {0: "tokens"})
-    elif file_format == "3cIOB":
-        data_set = ThreeColumnData.processFile(file, data_set)
-        split_text = data_set.getTokenizedSentences()
-    elif file_format == "3cIO":
-        data_set = ThreeColumnData.processFile(file, data_set, ioTags = True)
-        split_text = data_set.getTokenizedSentences()
+    if file_format == "tokens":
+        data_set = readCoNLL(file, {0: "tokens"})
+    elif file_format == "IOB":
+        data_set = readCoNLL(file, {1: "tokens", 3: "format_IOB"})
+    elif file_format == "XML_tokenized":
+        data_set = parseXML(file, True)
+    elif file_format == "XML_sentences":
+        data_set = parseXML(file, False)
     elif file_format == "plain":
         input_file = open(file, "r", encoding='utf-8')
-        split_text = [{'tokens': x.split()} for x in input_file.read().split("\n") if len(x) > 0]
+        data_set = [{'tokens': x.split()} for x in input_file.read().split("\n") if len(x) > 0]
         input_file.close()
     else:
         print("Unsupported format")
         sys.exit(1)
-    addCharAndCasingInformation(split_text)
-    data_set.setTokenizedSentences(split_text)
+    addCharAndCasingInformation(data_set)
     return data_set
-
-
-def predict(split_text, lstm_model):
-    data_matrix = createMatrices(split_text, lstm_model.mappings, True)
-    tags = lstm_model.tagSentences(data_matrix)
-    model_name = list(tags.keys())[0]
-    convertIOBtoBIO(tags[model_name])
-    return tags
 
 
 def printResults(results, output_file):

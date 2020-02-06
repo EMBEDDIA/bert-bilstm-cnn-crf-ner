@@ -45,14 +45,18 @@ def compute_precision_token_basis(guessed_sentences, correct_sentences, O_Label)
     return precision
 
 
-def computeMetrics(predictions, label_true):
-    model_name = list(predictions.keys())[0]
-    #predictions = predictions[model_name]
-    #label_pred = list(itertools.chain(*predictions))
-    label_pred = predictions[model_name]
-    #label_true = list(itertools.chain(*truth))
+def computeMetrics(label_pred, label_true, encodingScheme):
+    model_name = list(label_pred.keys())[0]
+    label_pred = label_pred[model_name]
 
-    checkBIOEncoding(label_pred, 'No')
+    if encodingScheme == 'IOBES':
+        convertIOBEStoBIO(label_pred)
+        convertIOBEStoBIO(label_true)
+    elif encodingScheme == 'IOB':
+        convertIOBtoBIO(label_pred)
+        convertIOBtoBIO(label_true)
+
+    checkBIOEncoding(label_pred, 'O')
 
     prec = compute_precision(label_pred, label_true)
     rec = compute_precision(label_true, label_pred)

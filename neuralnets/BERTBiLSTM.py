@@ -498,22 +498,16 @@ class BERTBiLSTM:
     def predictLabels(self, model, sentences):
         predLabels = [None]*len(sentences)
         sentenceLengths = self.getSentenceLengths(sentences)
-        total_sentences = len(sentences)
-        processed_sentences = 0
         for indices in sentenceLengths.values():   
             nnInput = self.getInputData(sentences, indices)
             predictions = model.predict(nnInput, verbose=False)
             predictions = predictions.argmax(axis=-1) #Predict classes            
-           
-            
+
             predIdx = 0
             for idx in indices:
                 predLabels[idx] = predictions[predIdx]    
                 predIdx += 1   
 
-            processed_sentences += 1
-            print(f"Predicted sentences: {processed_sentences}/{total_sentences}", end="\r")
-        print("\n")
         return predLabels
 
     def getInputData(self, sentences, indices):
