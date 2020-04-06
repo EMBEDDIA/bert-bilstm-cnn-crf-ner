@@ -49,12 +49,12 @@ parser.add_argument("--bert_n_layers", type=int, default=2)
 parser.add_argument("--n_epochs", type=int, default=25)
 #parser.add_argument("--finetuning", dest="finetuning", action="store_true")
 #parser.add_argument("--top_rnns", dest="top_rnns", action="store_true")
-parser.add_argument("--jobid", type=str, default="0001")
-parser.add_argument("--dataset_name", type=str, default="282NER_sl")
+parser.add_argument("--jobid", type=str, default="282NER_ru")
+parser.add_argument("--dataset_name", type=str, default="282NER_ru")
 parser.add_argument("--tagging_format", type=str, default="NER_IOB")
-#parser.add_argument("--embeddings_file", type=str, default="/home/adrian/Programs/bert-bilstm-cnn-crf-ner/embeddings/fastText157/cc.hr.300.vec.gz.top1.bin")
-parser.add_argument("--embeddings_file", type=str, default="/home/adrian/Programs/bert-bilstm-cnn-crf-ner/embeddings/fastText157/cc.sl.300.vec.gz.top1.bin")
+parser.add_argument("--embeddings_file", type=str, default="/home/adrian/Programs/bert-bilstm-cnn-crf-ner/embeddings/fastText157/cc.ru.300.vec.gz.top1.bin")
 parser.add_argument("--bert_path", type=str, default="bert-base-multilingual-cased")
+#parser.add_argument("--bert_path", type=str, default="/home/adrian/Programs/bert-bilstm-cnn-crf-ner/bert/shebert-pytorch/")
 hp = parser.parse_args()
 print("hyperparameters ",hp)
 
@@ -89,11 +89,13 @@ bert_mode = 'weighted_average'
 
 #Which GPU to use for . -1 for CPU
 if torch.cuda.is_available():
+    print("Using CUDA")
     bert_cuda_device = 0
 else:
+    print("Using CPU")
     bert_cuda_device = -1
 
-embLookup = BERTWordEmbeddings(embeddings_file, True, bert_path, bert_n_layers=bert_n_layers)
+embLookup = BERTWordEmbeddings(embeddings_file, True, bert_path, bert_n_layers=bert_n_layers, bert_cuda_device=bert_cuda_device)
 
 # You can use a cache that stores the computed BERT embeddings.
 # This increases the training speed, as BERT embeddings need to computed only once.

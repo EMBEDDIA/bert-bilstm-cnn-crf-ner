@@ -1,6 +1,8 @@
 #Folders
 results/
 embeddings/fastText157/
+bert/
+models/shebert/
 
 ### Compressed ###
 *.7z

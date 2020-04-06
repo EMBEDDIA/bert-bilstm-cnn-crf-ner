@@ -1,6 +1,5 @@
 import xml.sax
 
-
 def parseXML(file, tokenized=True):
     parser = xml.sax.make_parser()
     # turn off namepsaces
@@ -19,24 +18,26 @@ class XMLParser(xml.sax.ContentHandler):
         self.__sentences = []
         self.__tokenized= tokenized
         if tokenized:
-            self.__currentSentence = {"tokens": []}
+            self.__currentSentence = {"tokens": [], "tokens_ids": []}
         else:
             self.__currentSentence = {}
 
     def getSentences(self):
         return self.__sentences
 
-    def startElement(self, tag, attributes):
+    def startElement(self, name, attrs):
         self.__currentTag = ""
-        if tag == "s":
+        if name == "s":
             if self.__tokenized:
-                self.__currentSentence = {"tokens": []}
+                self.__currentSentence = {"tokens": [], "tokens_ids": []}
             else:
                 self.__currentTag = "s"
                 self.__currentSentence = {}
-        elif tag == "w":
+        elif name == "w":
             self.__currentTag = "w"
             self.__currentWord = ""
+            if self.__tokenized:
+                self.__currentSentence["tokens_ids"].append(attrs["id"])
 
     def characters(self, content):
         if self.__currentTag == "s":
@@ -48,8 +49,8 @@ class XMLParser(xml.sax.ContentHandler):
         if self.__currentTag == "w":
             self.__currentWord += content
 
-    def endElement(self, tag):
-        if tag == "w":
+    def endElement(self, name):
+        if name == "w":
             self.__currentSentence["tokens"].append(self.__currentWord)
-        elif tag == "s":
+        elif name == "s":
             self.__sentences.append(self.__currentSentence)

@@ -6,6 +6,8 @@ import sys
 
 import torch
 
+import xml.sax
+
 from neuralnets.BERTBiLSTM import BERTBiLSTM
 from util.BIOF1Validation import computeMetrics
 from util.CoNLL import readCoNLL
@@ -20,10 +22,11 @@ def main_command():
     required_arguments.add_argument("-l", "--language", help="Language of the file to process (en|hr)", required=True)
 
     optional_arguments = arguments_parser.add_argument_group('optional arguments')
-    optional_arguments.add_argument("-F", "--fileFormat", help="Format of input file [plain, tokens, IOB, XML_tokenized, XML_sentences]. Default plain", default="plain")
+    optional_arguments.add_argument("-F", "--fileFormat", help="Format of input file [plain, tokens, IOB, XML_tokenized, XML_sentences, XML_Large_tokenized, XML_Large_sentences]. Default plain", default="plain")
     optional_arguments.add_argument("-o", "--outputFile", help="Output file", default="")
     optional_arguments.add_argument("-H", "--HTMLFormat", help="Output file as HTML", action="store_true")
     optional_arguments.add_argument("-e", "--evaluate", help="Evaluate (only valid with IOB files)", action="store_true")
+    optional_arguments.add_argument("-s", "--lastSentence", help="ID of the last Sentence Processed. Valid only for large XML.", type=int, default=-1)
 
     arguments = arguments_parser.parse_args()
 
@@ -35,14 +38,28 @@ def main_command():
     print(f"File to process: {arguments.file}")
     print(f"Language to process: {arguments.language}")
     print(f"Output redirected to:", {arguments.outputFile})
-    data_set = loadText(arguments.file, arguments.fileFormat)
+
+    if arguments.lastSentence > -1:
+        output_file = open(arguments.outputFile, "a")
+        log_file = open(arguments.outputFile + ".log", "a")
+    else:
+        output_file = open(arguments.outputFile, "w")
+        log_file = open(arguments.outputFile + ".log", "w")
     lstm_model = loadModels(arguments.language)
-    tags = getTags(data_set, lstm_model)
-    printResults(generateOutput(data_set, tags, arguments.HTMLFormat), arguments.outputFile)
-    if arguments.evaluate and arguments.fileFormat == "IOB":
-        truth = [sentence["format_IOB"] for sentence in data_set]
-        precision, recall, f1 = computeMetrics(tags, truth, arguments.fileFormat)
-        print(f"Precision: {precision}\nRecall: {recall}\n F1: {f1}")
+    if not (arguments.fileFormat).startswith("XML_Large"):
+        data_set = loadText(arguments.file, arguments.fileFormat)
+        tags = getTags(data_set, lstm_model)
+        printResults(generateOutput(data_set, tags, arguments.HTMLFormat), output_file)
+        if arguments.evaluate and arguments.fileFormat == "IOB":
+            truth = [sentence["format_IOB"] for sentence in data_set]
+            precision, recall, f1 = computeMetrics(tags, truth, arguments.fileFormat)
+            print(f"Precision: {precision}\nRecall: {recall}\n F1: {f1}")
+    elif arguments.fileFormat == "XML_Large_sentences":
+        parseAndTagXML(lstm_model, arguments.file, output_file, log_file, False, arguments.lastSentence)
+    else:
+        parseAndTagXML(lstm_model, arguments.file, output_file, log_file, True, arguments.lastSentence)
+    output_file.close()
+    log_file.close()
 
 
 def generateOutput(data_set, tags, html_format):
@@ -52,6 +69,7 @@ def generateOutput(data_set, tags, html_format):
 
 
 def getTags(data_set, lstm_model):
+    addCharAndCasingInformation(data_set)
     testMatrix = createMatrices(data_set, lstm_model.mappings, True)
     return lstm_model.tagSentences(testMatrix)
 
@@ -107,26 +125,26 @@ def loadText(file, file_format):
     else:
         print("Unsupported format")
         sys.exit(1)
-    addCharAndCasingInformation(data_set)
     return data_set
 
 
 def printResults(results, output_file):
-    file = open(output_file, "w")
-    file.write(results)
-    file.close()
+    output_file.write(results)
 
 
-def annotateText(sentences, tags):
+def annotateText(data_set, tags):
     annotated_text = ""
     model_name = list(tags.keys())[0]
-    for sentence_id, sentence in enumerate(sentences):
+    for sentence_id, sentence in enumerate(data_set):
         annotated_sentence = ""
         tokens = sentence['tokens']
         if len(tokens) != len(tags[model_name][sentence_id]):
             print("Fatal error, tags doesn't match sentences")
             sys.exit(1)
-        annotated_sentence = annotated_sentence.join(f"{counter+1}\t{token}\tX---X\t{tag}\n" for ((counter, token), tag) in zip(enumerate(tokens), tags[model_name][sentence_id]))
+        if "tokens_ids" in sentence:
+            annotated_sentence = annotated_sentence.join(f"{counter + 1}\t{token}\t{token_id}\t{tag}\n" for ((counter, (token, token_id)), tag) in zip(enumerate(zip(tokens, sentence["tokens_ids"])), tags[model_name][sentence_id]))
+        else:
+            annotated_sentence = annotated_sentence.join(f"{counter+1}\t{token}\tX---X\t{tag}\n" for ((counter, token), tag) in zip(enumerate(tokens), tags[model_name][sentence_id]))
         annotated_text += f"{annotated_sentence}\n"
     return annotated_text
 
@@ -181,6 +199,95 @@ def generateHTML(sentences, tags):
 
     return parts[0] + lines + parts[1]
 
+
+def parseAndTagXML(lstm_model, input_file, output_file, log_file, tokenized, last_sentence_processed):
+    parser = xml.sax.make_parser()
+    parser.setFeature(xml.sax.handler.feature_namespaces, 0)
+    xml_parser_tagger = XMLParserTagger(tokenized, lstm_model, output_file, log_file, last_sentence_processed)
+    parser.setContentHandler(xml_parser_tagger)
+    parser.parse(input_file)
+
+
+class XMLParserTagger(xml.sax.ContentHandler):
+    def __init__(self, tokenized, lstm_model, output_file, log_file, last_sentence_processed):
+        self.__tokenized = tokenized
+        self.__lstm_model = lstm_model
+        self.__current_tag = ""
+        self.__current_word = ""
+        self.__sentences = []
+        self.__sentences_counter = 0
+        self.__output_file = output_file
+        self.__sentence_id = 0
+        self.__last_sentence_processed = last_sentence_processed
+        self.__skip_line = False
+        self.__log_file = log_file
+        if self.__tokenized:
+            self.__current_sentence = {"tokens": [], "tokens_ids": []}
+        else:
+            self.__current_sentence = {}
+
+    def __resetSentences(self):
+        self.__sentences = []
+        self.__sentences_counter = 0
+
+    def startElement(self, name, attrs):
+        self.__current_tag = name
+        if name == "s":
+            self.__sentence_id = int(attrs["id"])
+            if self.__last_sentence_processed > -1:
+                if self.__sentence_id <= self.__last_sentence_processed:
+                    self.__skip_line = True
+                    return
+                self.__skip_line = False
+            if self.__tokenized:
+                self.__current_sentence = {"tokens": [], "tokens_ids": []}
+            else:
+                self.__current_sentence = {}
+        elif name == "w":
+            self.__current_word = ""
+            if self.__tokenized:
+                self.__current_sentence["tokens_ids"].append(attrs["id"])
+
+    def characters(self, content):
+        if self.__skip_line:
+            return
+        content = content.rstrip()
+        if len(content) != 0:
+            if self.__current_tag == "s":
+                if self.__tokenized:
+                    print(f"Sentence {self.__sentence_id} isn't tokenized. Applying a simple tokenization based on spaces.\n")
+                    self.__log_file.write(f"Sentence {self.__sentence_id} isn't tokenized. Applying a simple tokenization based on spaces.\n")
+                    offset = len(self.__current_sentence["tokens"]) + 1
+                    for token_id, token in enumerate(content.split()):
+                        self.__current_sentence["tokens"].append(token)
+                        self.__current_sentence["tokens_ids"].append(f"w{self.__sentence_id}.{token_id+offset}")
+                else:
+                    if len(self.__current_sentence) == 0:
+                        self.__current_sentence = {'tokens': content.split()}
+                    else:
+                        for token in content.split():
+                            self.__current_sentence["tokens"].append(token)
+            if self.__current_tag == "w":
+                self.__current_word += content
+
+    def endElement(self, name):
+        if self.__skip_line:
+            return
+        if name == "w":
+            self.__current_sentence["tokens"].append(self.__current_word)
+        elif name == "s":
+            self.__sentences.append(self.__current_sentence)
+            self.__sentences_counter += 1
+            if self.__sentences_counter == 10000:
+                self.__callTagger()
+                self.__resetSentences()
+
+    def endDocument(self):
+        self.__callTagger()
+
+    def __callTagger(self):
+        tags = getTags(self.__sentences, self.__lstm_model)
+        printResults(annotateText(self.__sentences, tags), self.__output_file)
 
 if __name__ == '__main__':
     main_command()
