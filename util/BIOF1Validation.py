@@ -30,7 +30,6 @@
 
 from __future__ import print_function
 
-import itertools
 import logging
 """
 Computes the F1 score on BIO tagged data

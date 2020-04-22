@@ -34,9 +34,9 @@ import argparse
 import logging
 import sys
 import torch
-from neuralnets.BERTBiLSTM import BERTBiLSTM
-from util.preprocessing import perpareDataset, loadDatasetPickle
-from neuralnets.BERTWordEmbeddings import BERTWordEmbeddings
+from .neuralnets.BERTBiLSTM import BERTBiLSTM
+from .util.preprocessing import perpareDataset, loadDatasetPickle
+from .neuralnets.BERTWordEmbeddings import BERTWordEmbeddings
 from keras import backend as K
 import tensorflow as tf
 

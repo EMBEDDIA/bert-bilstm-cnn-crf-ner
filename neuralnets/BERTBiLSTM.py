@@ -35,7 +35,7 @@ License: Apache-2.0
 """
 
 from __future__ import print_function
-from util import BIOF1Validation
+from ..util import BIOF1Validation
 
 import keras
 from keras.optimizers import *
@@ -44,7 +44,6 @@ from keras.layers import *
 import math
 import numpy as np
 import sys
-import gc
 import time
 import os
 import random
@@ -54,7 +53,7 @@ from tqdm import tqdm
 from .keraslayers.ChainCRF import ChainCRF
 from .keraslayers.WeightedAverage import WeightedAverage
 from .BERTWordEmbeddings import BERTWordEmbeddings
-from util import conllEVAL
+from ..util import conllEVAL
 
 
 

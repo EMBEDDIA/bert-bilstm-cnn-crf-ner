@@ -25,11 +25,11 @@ import torch
 
 import xml.sax
 
-from neuralnets.BERTBiLSTM import BERTBiLSTM
-from util.BIOF1Validation import computeMetrics
-from util.CoNLL import readCoNLL
-from util.XMLParser import parseXML
-from util.preprocessing import createMatrices, addCharAndCasingInformation
+from .neuralnets.BERTBiLSTM import BERTBiLSTM
+from .util.BIOF1Validation import computeMetrics
+from .util.CoNLL import readCoNLL
+from .util.XMLParser import parseXML
+from .util.preprocessing import createMatrices, addCharAndCasingInformation
 
 
 def main_command():
