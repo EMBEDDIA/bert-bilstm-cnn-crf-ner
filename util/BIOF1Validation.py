@@ -1,9 +1,40 @@
+# Copyright 2018 Nils Reimers - Technical University of Darmstadt UKP
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Modified version
+# Copyright 2019-2020 José Moreno - Institut de Recherche en Informatique de Toulouse
+#                     Luis Adrián Cabrera-Diego - La Rochelle Université
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import print_function
+
+import itertools
 import logging
 """
 Computes the F1 score on BIO tagged data
 
-@author: Nils Reimers
 """
 
 def compute_f1_token_basis(predictions, correct, O_Label): 
@@ -16,6 +47,7 @@ def compute_f1_token_basis(predictions, correct, O_Label):
         f1 = 2.0 * prec * rec / (prec + rec);
         
     return prec, rec, f1
+
 
 def compute_precision_token_basis(guessed_sentences, correct_sentences, O_Label):
     assert(len(guessed_sentences) == len(correct_sentences))
@@ -40,6 +72,29 @@ def compute_precision_token_basis(guessed_sentences, correct_sentences, O_Label)
         precision = float(correctCount) / count
         
     return precision
+
+
+def computeMetrics(label_pred, label_true, encodingScheme):
+    model_name = list(label_pred.keys())[0]
+    label_pred = label_pred[model_name]
+
+    if encodingScheme == 'IOBES':
+        convertIOBEStoBIO(label_pred)
+        convertIOBEStoBIO(label_true)
+    elif encodingScheme == 'IOB':
+        convertIOBtoBIO(label_pred)
+        convertIOBtoBIO(label_true)
+
+    checkBIOEncoding(label_pred, 'O')
+
+    prec = compute_precision(label_pred, label_true)
+    rec = compute_precision(label_true, label_pred)
+
+    f1 = 0
+    if (rec + prec) > 0:
+        f1 = 2.0 * prec * rec / (prec + rec)
+
+    return prec, rec, f1
 
 
 def compute_f1(predictions, correct, idx2Label, correctBIOErrors='No', encodingScheme='BIO'): 
@@ -72,7 +127,7 @@ def compute_f1(predictions, correct, idx2Label, correctBIOErrors='No', encodingS
     
     f1 = 0
     if (rec+prec) > 0:
-        f1 = 2.0 * prec * rec / (prec + rec);
+        f1 = 2.0 * prec * rec / (prec + rec)
         
     return prec, rec, f1
 

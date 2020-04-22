@@ -1,0 +1,31 @@
+#Folders
+results/
+embeddings/fastText157/
+bert/
+models/shebert/
+pkl/
+
+### Compressed ###
+*.7z
+*.deb
+*.gz
+*.pkg
+*.rar
+*.rpm
+*.sit
+*.sitx
+*.tar
+*.zip
+*.zipx
+*.tgz
+
+### Binaries ###
+*.bin
+
+### Python ###
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+

@@ -1,3 +1,33 @@
+# Copyright 2018 Nils Reimers - Technical University of Darmstadt UKP
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Modified version
+# Copyright 2019-2020 José Moreno - Institut de Recherche en Informatique de Toulouse
+#                     Luis Adrián Cabrera-Diego - La Rochelle Université
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import urllib.request as urllib2
 import urllib.parse as urlparse
 from urllib.request import urlretrieve
@@ -9,7 +39,7 @@ import gzip
 import sys
 
 import torch
-from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM
+from pytorch_pretrained_bert import BertTokenizer, BertModel
 from fasttext import load_model
 
 class MyBertModel(BertModel):
@@ -75,8 +105,9 @@ class MyBertModel(BertModel):
             emb.append(embtokLayers)
         return emb
 
+
 class BERTWordEmbeddings:
-    def __init__(self, embeddings_path, bert_path, bert_n_layers=12, bert_mode='average', bert_cuda_device=-1):
+    def __init__(self, embeddings_path, use_fasttext, bert_path, bert_n_layers=12, bert_mode='average', bert_cuda_device=-1):
         self.embeddings_path = embeddings_path
         self.embedding_name = os.path.splitext(os.path.basename(embeddings_path))[0] if embeddings_path is not None else 'None'
         self.word2Idx = None
@@ -94,8 +125,16 @@ class BERTWordEmbeddings:
         self.cache = {}
         self.lazyCacheFiles = []
 
-        self.use_fastext = False
+        self.use_fastext = use_fasttext
 
+        if self.embeddings_path is not None:
+            self.__loadEmbeddings()
+
+    def __loadEmbeddings(self):
+        if self.use_fastext:
+            self.ftmodel = load_model(self.embeddings_path)
+        else:
+            self.word2Idx, self.embeddings = self.readEmbeddings(self.embeddings_path)
 
     def getConfig(self):
         return {
@@ -105,8 +144,6 @@ class BERTWordEmbeddings:
             "bert_n_layers": self.bert_n_layers,
             "bert_cuda_device": self.bert_cuda_device
         }
-
-
 
     def sentenceLookup(self, sentences):
         bert_vectors = None
@@ -118,28 +155,24 @@ class BERTWordEmbeddings:
         # :: Word Embedding ::
         tokens_vectors = None
         if self.embeddings_path is not None:
-            if self.word2Idx is None or self.embeddings is None:
-                self.word2Idx, self.embeddings = self.readEmbeddings(self.embeddings_path)
-                if self.use_fastext:
-                    self.ftmodel = load_model(self.embeddings_path+'.bin')
-
             tokens_vectors = []
             oov = []
             for sentence in sentences:
                 per_token_embedding = []
                 for token in sentence['tokens']:
-                    vecId = self.word2Idx['UNKNOWN_TOKEN']
-                    vecVal = self.embeddings[vecId]
-                    if token in self.word2Idx:
-                        vecId = self.word2Idx[token]
-                        vecVal = self.embeddings[vecId]
-                    elif token.lower() in self.word2Idx:
-                        vecId = self.word2Idx[token.lower()]
-                        vecVal = self.embeddings[vecId]
+                    if self.use_fastext:
+                        vecVal = self.ftmodel.get_word_vector(token)
                     else:
-                        oov.append(token)
-                        if self.use_fastext:
-                           vecVal = self.ftmodel.get_word_vector(token)
+                        vecId = self.word2Idx['UNKNOWN_TOKEN']
+                        vecVal = self.embeddings[vecId]
+                        if token in self.word2Idx:
+                            vecId = self.word2Idx[token]
+                            vecVal = self.embeddings[vecId]
+                        elif token.lower() in self.word2Idx:
+                            vecId = self.word2Idx[token.lower()]
+                            vecVal = self.embeddings[vecId]
+                        else:
+                            oov.append(token)
                     per_token_embedding.append(vecVal if self.use_fastext else self.embeddings[vecId])
                 per_token_embedding = np.asarray(per_token_embedding)
                 tokens_vectors.append(per_token_embedding)
@@ -154,28 +187,24 @@ class BERTWordEmbeddings:
 
     def batchLookup(self, sentences, feature_name):
         if feature_name == 'tokens':
-            if self.word2Idx is None or self.embeddings is None:
-                self.word2Idx, self.embeddings = self.readEmbeddings(self.embeddings_path)
-                if self.use_fastext:
-                     self.ftmodel = load_model(self.embeddings_path+'.bin')
-
             tokens_vectors = []
             oov = []
             for sentence in sentences:
                 per_token_embedding = []
                 for token in sentence['tokens']:
-                    vecId = self.word2Idx['UNKNOWN_TOKEN']
-                    vecVal = self.embeddings[vecId]
-                    if token in self.word2Idx:
-                        vecId = self.word2Idx[token]
-                        vecVal = self.embeddings[vecId]
-                    elif token.lower() in self.word2Idx:
-                        vecId = self.word2Idx[token.lower()]
-                        vecVal = self.embeddings[vecId]
+                    if self.use_fastext:
+                        vecVal = self.ftmodel.get_word_vector(token)
                     else:
-                        oov.append(token)
-                        if self.use_fastext:
-                           vecVal = self.ftmodel.get_word_vector(token)
+                        vecId = self.word2Idx['UNKNOWN_TOKEN']
+                        vecVal = self.embeddings[vecId]
+                        if token in self.word2Idx:
+                            vecId = self.word2Idx[token]
+                            vecVal = self.embeddings[vecId]
+                        elif token.lower() in self.word2Idx:
+                            vecId = self.word2Idx[token.lower()]
+                            vecVal = self.embeddings[vecId]
+                        else:
+                            oov.append(token)
                     per_token_embedding.append(vecVal)
                 per_token_embedding = np.asarray(per_token_embedding)
                 tokens_vectors.append(per_token_embedding)
@@ -294,16 +323,19 @@ class BERTWordEmbeddings:
         logging.info("Read file: %s" % embeddingsPath)
         word2Idx = {}
         embeddings = []
-        embeddingsIn = gzip.open(embeddingsPath, "rt") if embeddingsPath.endswith('.gz') else open(embeddingsPath,
-                                                                                                   encoding="utf8")
+        embeddingsIn = gzip.open(embeddingsPath, "rt") if embeddingsPath.endswith('.gz') else open(embeddingsPath, encoding="utf8")
         embeddingsDimension = None
 
         for line in embeddingsIn:
             split = line.rstrip().split(" ")
             word = split[0]
 
-            if embeddingsDimension==None:
+            if embeddingsDimension == None:
                 embeddingsDimension = len(split) - 1
+                if embeddingsDimension == 1:
+                    embeddingsDimension = None
+                    continue
+
 
             if (len(split) - 1)!=embeddingsDimension:  # Assure that all lines in the embeddings file are of the same length
                 print("ERROR: A line in the embeddings file had more or less  dimensions than expected. Skip token.")

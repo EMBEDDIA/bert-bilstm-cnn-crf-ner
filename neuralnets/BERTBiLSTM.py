@@ -1,7 +1,36 @@
+# Copyright 2018 Nils Reimers - Technical University of Darmstadt UKP
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Modified version
+# Copyright 2019-2020 José Moreno - Institut de Recherche en Informatique de Toulouse
+#                     Luis Adrián Cabrera-Diego - La Rochelle Université
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 A bidirectional LSTM with optional CRF and character-based presentation for NLP sequence tagging used for multi-task learning.
 
-Author: Nils Reimers
 License: Apache-2.0
 """
 
@@ -457,8 +486,7 @@ class BERTBiLSTM:
             if self.params['earlyStopping']  > 0 and no_improvement_since >= self.params['earlyStopping']:
                 logging.info("!!! Early stopping, no improvement after "+str(no_improvement_since)+" epochs !!!")
                 break
-            
-            
+
     def tagSentences(self, sentences):
         # Pad characters
         if 'characters' in self.params['featureNames']:
@@ -468,14 +496,18 @@ class BERTBiLSTM:
         for modelName, model in self.models.items():
             paddedPredLabels = self.predictLabels(model, sentences)
             predLabels = []
-            for idx in range(len(sentences)):
+            total_sentences = len(sentences)
+            processed_sentences = 0
+
+            for (idx, sentence) in enumerate(sentences):
                 unpaddedPredLabels = []
-                for tokenIdx in range(len(sentences[idx]['tokens'])):
-                    if sentences[idx]['tokens'][tokenIdx] != 0:  # Skip padding tokens
+                for (tokenIdx, token) in enumerate(sentence['tokens']):
+                    if token != 0:  # Skip padding tokens
                         unpaddedPredLabels.append(paddedPredLabels[idx][tokenIdx])
-
                 predLabels.append(unpaddedPredLabels)
-
+                processed_sentences += 1
+                print(f"Processed sentences: {processed_sentences}/{total_sentences}", end="\r")
+            print("\n")
             idx2Label = self.idx2Labels[modelName]
             labels[modelName] = [[idx2Label[tag] for tag in tagSentence] for tagSentence in predLabels]
 
@@ -495,18 +527,16 @@ class BERTBiLSTM:
     def predictLabels(self, model, sentences):
         predLabels = [None]*len(sentences)
         sentenceLengths = self.getSentenceLengths(sentences)
-        
         for indices in sentenceLengths.values():   
             nnInput = self.getInputData(sentences, indices)
             predictions = model.predict(nnInput, verbose=False)
             predictions = predictions.argmax(axis=-1) #Predict classes            
-           
-            
+
             predIdx = 0
             for idx in indices:
                 predLabels[idx] = predictions[predIdx]    
                 predIdx += 1   
-        
+
         return predLabels
 
     def getInputData(self, sentences, indices):
@@ -664,10 +694,15 @@ class BERTBiLSTM:
 
 
     @staticmethod
-    def loadModel(modelPath,embeddings_file,use_fastext = False):
+    def loadModel(modelPath, bert_path_name, bert_cuda_device, embeddings_file, use_fastext = False):
         import h5py
         import json
         from .keraslayers.ChainCRF import create_custom_objects
+
+        f = h5py.File(modelPath, 'r')
+        if keras.__version__ != f.attrs.get('keras_version').decode('utf-8'):
+            print("The model was trained with a different version of Keras! " + f.attrs.get('keras_version').decode('utf-8') + " vs. " + keras.__version__)
+            print("The model might break")
 
         custom_layers = create_custom_objects()
         custom_layers['WeightedAverage'] = WeightedAverage
@@ -682,16 +717,14 @@ class BERTBiLSTM:
         # :: Read the config values for the embedding lookup function ::
         embeddings_path = params['embeddingsConfig']['embeddings_path']     
         bert_mode = params['embeddingsConfig']['bert_mode']
-        bert_path = params['embeddingsConfig']['bert_path']
+        #The location of the berth models could have changed and the configuration might be different
+        if bert_path_name == "":
+            bert_path_name = params['embeddingsConfig']['bert_path']
         bert_n_layers = params['embeddingsConfig']['bert_n_layers'] if 'bert_n_layers' in params['embeddingsConfig'] else None
-#TO REMOVE: ZAGREB DEMO ONLY
-#        base_dir ='/local2/users/jmoreno/data6Tbis2/' if True else '/data6T/'
-#        bert_path = base_dir + 'Datasets/BERT/cased_L-12_H-768_A-12/'
-#END TO REMOVE          
-        bert_cuda_device = -1  # Which GPU to use. -1 for CPU
+        if bert_cuda_device == "":
+            bert_cuda_device = -1  # Which GPU to use. -1 for CPU
     
-        embLookup = BERTWordEmbeddings(embeddings_file, bert_path, bert_mode=bert_mode, bert_cuda_device=bert_cuda_device,bert_n_layers=bert_n_layers) if not bert_n_layers is None else BERTWordEmbeddings(embeddings_file, bert_path, bert_mode=bert_mode, bert_cuda_device=bert_cuda_device)
-        embLookup.use_fastext = use_fastext
+        embLookup = BERTWordEmbeddings(embeddings_file, use_fastext, bert_path_name, bert_mode=bert_mode, bert_cuda_device=bert_cuda_device, bert_n_layers=bert_n_layers) if not bert_n_layers is None else BERTWordEmbeddings(embeddings_file, bert_path_name, bert_mode=bert_mode, bert_cuda_device=bert_cuda_device)
 
         # :: Create new model object ::
         bilstm = BERTBiLSTM(embLookup, params)

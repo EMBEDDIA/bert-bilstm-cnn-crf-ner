@@ -1,11 +1,39 @@
+# Copyright 2018 Nils Reimers - Technical University of Darmstadt UKP
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Modified version
+# Copyright 2019-2020 José Moreno - Institut de Recherche en Informatique de Toulouse
+#                     Luis Adrián Cabrera-Diego - La Rochelle Université
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import (division, absolute_import, print_function, unicode_literals)
 import os
-import numpy as np
 import os.path
 import logging
 from .CoNLL import readCoNLL
 
-import sys
 import pickle as pkl
 
 from unidecode import unidecode
@@ -27,9 +55,9 @@ def perpareDataset(datasets, padOneTokenSentence=True):
         datasetColumns = dataset['columns']
         commentSymbol = dataset['commentSymbol']
 
-        trainData = 'data/%s/train.txt' % datasetName 
-        devData = 'data/%s/dev.txt' % datasetName 
-        testData = 'data/%s/test.txt' % datasetName 
+        trainData = '/home/adrian/DataSets/NER/%s/train.txt' % datasetName
+        devData = '/home/adrian/DataSets/NER/%s/dev.txt' % datasetName
+        testData = '/home/adrian/DataSets/NER/%s/test.txt' % datasetName
         paths = [trainData, devData, testData]
 
         logging.info("\n:: Transform "+datasetName+" dataset ::")
@@ -44,6 +72,7 @@ def perpareDataset(datasets, padOneTokenSentence=True):
     
     return outputPath
 
+
 def loadDatasetPickle(embeddingsPickle):
     """ Loads the cPickle file, that contains the word embeddings and the datasets """
     f = open(embeddingsPickle, 'rb')
@@ -51,6 +80,17 @@ def loadDatasetPickle(embeddingsPickle):
     f.close()
 
     return pklObjects['mappings'], pklObjects['data']
+
+
+def addCharAndCasingInformation(sentences):
+    for sentenceIdx in range(len(sentences)):
+        sentences[sentenceIdx]['characters'] = []
+        sentences[sentenceIdx]['casing'] = []
+        for tokenIdx in range(len(sentences[sentenceIdx]['tokens'])):
+            token = sentences[sentenceIdx]['tokens'][tokenIdx]
+            chars = [c for c in token]
+            sentences[sentenceIdx]['characters'].append(chars)
+            sentences[sentenceIdx]['casing'].append(getCasing(token))
 
 
 def addCharInformation(sentences):
@@ -61,6 +101,7 @@ def addCharInformation(sentences):
             token = sentences[sentenceIdx]['tokens'][tokenIdx]
             chars = [c for c in token]
             sentences[sentenceIdx]['characters'].append(chars)
+
 
 def addCasingInformation(sentences):
     """Adds information of the casing of words"""
@@ -106,6 +147,8 @@ def createMatrices(sentences, mappings, padOneTokenSentence):
     #symbols = (u"абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ", u"abvgdeejzijklmnoprstufhzcss_y_euaABVGDEEJZIJKLMNOPRSTUFHZCSS_Y_EUA")
     #tr = {ord(a):ord(b) for a, b in zip(*symbols)}
     data = []
+    total_sentences = len(sentences)
+    processed_sentences = 0
     for sentence in sentences:
         row = {name: [] for name in list(mappings.keys())}
         
@@ -142,7 +185,9 @@ def createMatrices(sentences, mappings, padOneTokenSentence):
                     row[mapping].append(0)
 
         data.append(row)
-
+        processed_sentences += 1
+        print(f"Sentences appended to the matrix: {processed_sentences}/{total_sentences}", end="\r")
+    print("\n")
     return data
     
   
