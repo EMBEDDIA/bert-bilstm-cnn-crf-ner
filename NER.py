@@ -85,10 +85,52 @@ def generateOutput(data_set, tags, html_format):
     return annotateText(data_set, tags)
 
 
+def generateDictOutput(data_set, predictions):
+    annotated_text = {}
+    model_name = list(predictions.keys())[0]
+    for sentence_id, sentence in enumerate(data_set):
+        tokens = sentence['tokens']
+        tags = predictions[model_name][sentence_id]
+        if len(tokens) != len(tags):
+            print("Fatal error, tags doesn't match sentences")
+            return None
+        annotated_text[sentence_id] = {}
+        annotated_text[sentence_id]["tokens"] = tokens
+        annotated_text[sentence_id]["tags"] = tags
+    return annotated_text
+
+
 def getTags(data_set, lstm_model):
     addCharAndCasingInformation(data_set)
     testMatrix = createMatrices(data_set, lstm_model.mappings, True)
     return lstm_model.tagSentences(testMatrix)
+
+
+def loadModelsWithConfig(lang, lang_configuration, global_configuration):
+    # Which GPU to use for . -1 for CPU
+    if torch.cuda.is_available() and global_configuration["useCuda"]:
+        print("Using CUDA")
+        bert_cuda_device = 0
+    else:
+        print("Using CPU")
+        bert_cuda_device = -1
+
+    bert_model_name = "bert-base-multilingual-cased"
+    fasttext_embeddings = lang_configuration["fasttextEmbeddings"]
+    if lang == "en":
+        embeddings_file = f"{global_configuration['komninosPath']}/komninos_english_embeddings.gz"
+        model_path = f"{global_configuration['modelBasePath']}/{lang_configuration['modelName']}"
+    else:
+        embeddings_file = f"{global_configuration['fasttextPath']}/cc.{lang}.300.vec.gz.top1.bin"
+        model_path = f"{global_configuration['modelBasePath']}/{lang_configuration['modelName']}"
+    if os.path.exists(embeddings_file) is False:
+        embeddings_scripts = global_configuration["embeddingsScripts"]
+        if lang == "en":
+            subprocess.run(["sh", f"{embeddings_scripts}/komninos_embeddings.sh"], check=True)
+        else:
+            subprocess.run(["sh", f"{embeddings_scripts}fasttext_embeddings.sh", lang], check=True)
+    lstm_model = BERTBiLSTM.loadModel(model_path, bert_model_name, bert_cuda_device, embeddings_file, use_fastext=fasttext_embeddings)
+    return lstm_model
 
 
 def loadModels(lang):
