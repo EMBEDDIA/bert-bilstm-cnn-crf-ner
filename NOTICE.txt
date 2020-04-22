@@ -1,5 +1,28 @@
+##### Addendum ##########
+This project is based on the work presented in the github repository:
+
+[BiLSTM-CNN-CRF ELMo implementation](https://github.com/UKPLab/elmo-bilstm-cnn-crf)
+
+This repository was created by Nils Reimers at the Ubiquitous Knowledge Processing (UKP) Lab
+of the Technical University of Darmstadt. The work was made available with an Apache 2.0 License.
+
+Furthermore, the original project uses a portion of the code presented in:
+
+[phipleg/keras](https://github.com/phipleg/keras/tree/crf)
+
+Specifically, the utilized code is the one present in ChainCRF.py. This code was attributed
+an MIT License. This code is reused in this modified code.
+
+All the modified code, has been acknoledge and indicated in the begining of each source,
+respecting their original licenses and authors.
+
+###### Original ##########
 -------------------------------------------------------------------------------
-Copyright 2019
-Embeddia Project
-Université de la Rochelle
+Copyright 2018
+Ubiquitous Knowledge Processing (UKP) Lab
+Technische UniversitÃ¤t Darmstadt
 -------------------------------------------------------------------------------
+
+
+
+

@@ -3,6 +3,7 @@ results/
 embeddings/fastText157/
 bert/
 models/shebert/
+pkl/
 
 ### Compressed ###
 *.7z

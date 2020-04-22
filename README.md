@@ -28,3 +28,12 @@ It has some optional arguments, such as:
 --evaluate -e If the document is annotated, it evaluates the document
 --lastSentence -s This argument is used when large XML files are parsed and we need to restart the process of it. It takes the id of the last processed sentence.
 ```
+
+# License
+
+This work has been attributed with an MIT License, with an exception to the code that it was developed by a third-party. Specifically, we have used code from:
+
+- [BiLSTM-CNN-CRF ELMo implementation](https://github.com/UKPLab/elmo-bilstm-cnn-crf): Apache 2.0 License
+- [phipleg/keras](https://github.com/phipleg/keras/tree/crf): MIT License
+
+All the files have their respective license.
