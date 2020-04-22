@@ -33,8 +33,6 @@ import os
 import sys
 import logging
 import time
-import torch
-from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM
 
 if len(sys.argv) < 3:
     print("Usage: python Create_BERT_Cache.py datasetName tokenColumnId [cuda_device]")
