@@ -126,9 +126,9 @@ def loadModelsWithConfig(lang, lang_configuration, global_configuration, tf_grap
     if os.path.exists(embeddings_file) is False:
         embeddings_scripts = global_configuration["embeddingsScripts"]
         if lang == "en":
-            subprocess.run(["sh", f"{embeddings_scripts}/komninos_embeddings.sh"], check=True)
+            subprocess.run([f"./{embeddings_scripts}/komninos_embeddings.sh"], check=True)
         else:
-            subprocess.run(["sh", f"{embeddings_scripts}fasttext_embeddings.sh", lang], check=True)
+            subprocess.run([f"./{embeddings_scripts}fasttext_embeddings.sh", lang], check=True)
     lstm_model = BERTBiLSTM.loadModel(model_path, bert_model_name, bert_cuda_device, embeddings_file, use_fastext=fasttext_embeddings, tf_graph=tf_graph)
     return lstm_model
 
