@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Embeddia Project - Named Entity Recognition
 # Copyright © 2020 Luis Adrián Cabrera Diego - La Rochelle Université
