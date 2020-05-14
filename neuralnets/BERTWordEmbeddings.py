@@ -135,6 +135,9 @@ class BERTWordEmbeddings:
             self.ftmodel = load_model(self.embeddings_path)
         else:
             self.word2Idx, self.embeddings = self.readEmbeddings(self.embeddings_path)
+        if self.bert_mode is not None:
+            self.loadBERT()
+
 
     def getConfig(self):
         return {
