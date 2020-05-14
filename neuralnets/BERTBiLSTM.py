@@ -486,14 +486,18 @@ class BERTBiLSTM:
                 logging.info("!!! Early stopping, no improvement after "+str(no_improvement_since)+" epochs !!!")
                 break
 
-    def tagSentences(self, sentences):
+    def tagSentences(self, sentences, tf_graph=None):
         # Pad characters
         if 'characters' in self.params['featureNames']:
             self.padCharacters(sentences)
 
         labels = {}
         for modelName, model in self.models.items():
-            paddedPredLabels = self.predictLabels(model, sentences)
+            if tf_graph is not None:
+                with tf_graph.as_default():
+                    paddedPredLabels = self.predictLabels(model, sentences)
+            else:
+                paddedPredLabels = self.predictLabels(model, sentences)
             predLabels = []
             total_sentences = len(sentences)
             processed_sentences = 0
@@ -693,7 +697,7 @@ class BERTBiLSTM:
 
 
     @staticmethod
-    def loadModel(modelPath, bert_path_name, bert_cuda_device, embeddings_file, use_fastext = False):
+    def loadModel(modelPath, bert_path_name, bert_cuda_device, embeddings_file, use_fastext = False, tf_graph=None):
         import h5py
         import json
         from .keraslayers.ChainCRF import create_custom_objects
@@ -705,7 +709,11 @@ class BERTBiLSTM:
 
         custom_layers = create_custom_objects()
         custom_layers['WeightedAverage'] = WeightedAverage
-        model = keras.models.load_model(modelPath, custom_objects=custom_layers)
+        if tf_graph is not None:
+            with tf_graph.as_default():
+                model = keras.models.load_model(modelPath, custom_objects=custom_layers)
+        else:
+            model = keras.models.load_model(modelPath, custom_objects=custom_layers)
 
         with h5py.File(modelPath, 'r') as f:
             mappings = json.loads(f.attrs['mappings'])

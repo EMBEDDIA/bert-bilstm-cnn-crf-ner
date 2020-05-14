@@ -100,13 +100,13 @@ def generateDictOutput(data_set, predictions):
     return annotated_text
 
 
-def getTags(data_set, lstm_model):
+def getTags(data_set, lstm_model, tf_graph=None):
     addCharAndCasingInformation(data_set)
     testMatrix = createMatrices(data_set, lstm_model.mappings, True)
-    return lstm_model.tagSentences(testMatrix)
+    return lstm_model.tagSentences(testMatrix, tf_graph=tf_graph)
 
 
-def loadModelsWithConfig(lang, lang_configuration, global_configuration):
+def loadModelsWithConfig(lang, lang_configuration, global_configuration, tf_graph=None):
     # Which GPU to use for . -1 for CPU
     if torch.cuda.is_available() and global_configuration["useCuda"]:
         print("Using CUDA")
@@ -129,7 +129,7 @@ def loadModelsWithConfig(lang, lang_configuration, global_configuration):
             subprocess.run(["sh", f"{embeddings_scripts}/komninos_embeddings.sh"], check=True)
         else:
             subprocess.run(["sh", f"{embeddings_scripts}fasttext_embeddings.sh", lang], check=True)
-    lstm_model = BERTBiLSTM.loadModel(model_path, bert_model_name, bert_cuda_device, embeddings_file, use_fastext=fasttext_embeddings)
+    lstm_model = BERTBiLSTM.loadModel(model_path, bert_model_name, bert_cuda_device, embeddings_file, use_fastext=fasttext_embeddings, tf_graph=tf_graph)
     return lstm_model
 
 
