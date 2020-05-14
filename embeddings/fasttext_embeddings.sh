@@ -28,7 +28,7 @@ then
     mkdir $DIR
 fi
 
-wget https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.$LANG.300.bin.gz --directory-prefix=$DIR
+wget -nc https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.$LANG.300.bin.gz --directory-prefix=$DIR
 
 echo "Unzipping file"
 gzip -dc <$DIR/cc.$LANG.300.bin.gz > $DIR/cc.$LANG.300.vec.gz.top1.bin
