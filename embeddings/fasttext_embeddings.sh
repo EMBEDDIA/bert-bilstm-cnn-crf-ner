@@ -25,13 +25,18 @@ DIR=$DIR/fastText157
 
 if [[ ! -d "$DIR" ]]
 then
+	echo "Creating directory"
     mkdir $DIR
+    if [ $? -ne 0 ]; then { echo "Failed, aborting." ; exit 1; } fi
 fi
 
 wget -nc https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.$LANG.300.bin.gz --directory-prefix=$DIR
+if [ $? -ne 0 ]; then { echo "Failed, aborting." ; exit 1; } fi
 
 echo "Unzipping file"
 gzip -dc <$DIR/cc.$LANG.300.bin.gz > $DIR/cc.$LANG.300.vec.gz.top1.bin
+if [ $? -ne 0 ]; then { echo "Failed, aborting." ; exit 1; } fi
 
 echo "Cleaning $DIR"
 rm $DIR/cc.$LANG.300.bin.gz
+if [ $? -ne 0 ]; then { echo "Failed, aborting." ; exit 1; } fi

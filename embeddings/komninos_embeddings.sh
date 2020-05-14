@@ -20,4 +20,5 @@
 DIR="${0%/*}"
 
 wget -nc https://public.ukp.informatik.tu-darmstadt.de/reimers/embeddings/komninos_english_embeddings.gz --directory-prefix=$DIR
+if [ $? -ne 0 ]; then { echo "Failed, aborting." ; exit 1; } fi
 
