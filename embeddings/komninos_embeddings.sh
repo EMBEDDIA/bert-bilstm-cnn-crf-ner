@@ -19,6 +19,7 @@
 
 DIR="${0%/*}"
 
+#Set exit on error
 set -e
 catchKill () {
 	echo "Process killed while: $2"

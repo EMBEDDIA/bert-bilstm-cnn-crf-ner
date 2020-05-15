@@ -17,7 +17,7 @@
 # DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#Set exit on error
+
 LANG=$1
 
 DIR="${0%/*}"
@@ -31,6 +31,7 @@ then
     if [ $? -ne 0 ]; then { echo "Failed, aborting." ; exit 1; } fi
 fi
 
+#Set exit on error
 set -e
 catchKill () {
 	echo "Process killed while: $2"
