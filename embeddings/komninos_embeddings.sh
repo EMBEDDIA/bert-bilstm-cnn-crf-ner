@@ -19,6 +19,40 @@
 
 DIR="${0%/*}"
 
-wget -nc https://public.ukp.informatik.tu-darmstadt.de/reimers/embeddings/komninos_english_embeddings.gz --directory-prefix=$DIR
-if [ $? -ne 0 ]; then { echo "Failed, aborting." ; exit 1; } fi
+set -e
+catchKill () {
+	echo "Process killed while: $2"
+	removeFiles $3
+}
+
+catchExit () {
+	# An error greater than 128 means a kill signal
+	if [[ "$1" -lt "128" &&  "$1" != "0" ]]
+	then
+		echo "Error while: $2"
+		removeFiles $3
+	fi
+	echo $1
+}
+
+removeFiles() {
+	echo "Cleaning $DIR and removing $1"
+		if [[ -d "$1" ]]
+		then
+			rm -r $1
+		else
+			if [[ -f "$1" ]]
+			then
+				rm $1
+			fi
+		fi
+}
+
+trap 'catchKill $? "$MESSAGE" "$FILE"' SIGINT
+trap 'catchExit $? "$MESSAGE" "$FILE"' EXIT
+
+FILE="komninos_english_embeddings.gz"
+MESSAGE="Downloading embeddings"
+
+wget -N https://public.ukp.informatik.tu-darmstadt.de/reimers/embeddings/komninos_english_embeddings.gz --directory-prefix=$DIR
 

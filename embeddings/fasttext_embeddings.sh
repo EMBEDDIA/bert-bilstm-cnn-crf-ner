@@ -17,6 +17,7 @@
 # DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#Set exit on error
 LANG=$1
 
 DIR="${0%/*}"
@@ -30,13 +31,51 @@ then
     if [ $? -ne 0 ]; then { echo "Failed, aborting." ; exit 1; } fi
 fi
 
-wget -nc https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.$LANG.300.bin.gz --directory-prefix=$DIR
-if [ $? -ne 0 ]; then { echo "Failed, aborting." ; exit 1; } fi
+set -e
+catchKill () {
+	echo "Process killed while: $2"
+	removeFiles $3
+}
 
-echo "Unzipping file"
+catchExit () {
+	# An error greater than 128 means a kill signal
+	if [[ "$1" -lt "128" &&  "$1" != "0" ]]
+	then
+		echo "Error while: $2"
+		removeFiles $3
+	fi
+	echo $1
+}
+
+removeFiles() {
+	echo "Cleaning $DIR and removing $1"
+		if [[ -d "$1" ]]
+		then
+			rm -r $1
+		else
+			if [[ -f "$1" ]]
+			then
+				rm $1
+			fi
+		fi
+}
+
+
+
+trap 'catchKill $? "$MESSAGE" "$FILE"' SIGINT
+trap 'catchExit $? "$MESSAGE" "$FILE"' EXIT
+
+FILE="$DIR/cc.$LANG.300.bin.gz"
+MESSAGE="Downloading embeddings"
+echo $MESSAGE
+wget -N https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.$LANG.300.bin.gz --directory-prefix=$DIR
+
+FILE="$DIR/cc.$LANG.300.vec.gz.top1.bin"
+MESSAGE="Unzipping embeddings"
+echo $MESSAGE
 gzip -dc <$DIR/cc.$LANG.300.bin.gz > $DIR/cc.$LANG.300.vec.gz.top1.bin
-if [ $? -ne 0 ]; then { echo "Failed, aborting." ; exit 1; } fi
 
-echo "Cleaning $DIR"
+FILE="$DIR/cc.$LANG.300.bin.gz"
+MESSAGE="Cleaning $DIR"
+echo $MESSAGE
 rm $DIR/cc.$LANG.300.bin.gz
-if [ $? -ne 0 ]; then { echo "Failed, aborting." ; exit 1; } fi
