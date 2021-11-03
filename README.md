@@ -37,3 +37,29 @@ This work has been attributed with an MIT License, with an exception to the code
 - [phipleg/keras](https://github.com/phipleg/keras/tree/crf): MIT License
 
 All the files have their respective license.
+
+## How to cite?
+
+```
+@inproceedings{moreno-etal-2019-tlr,
+    title = "{TLR} at {BSNLP}2019: A Multilingual Named Entity Recognition System",
+    author = "Moreno, Jose G.  and
+      Linhares Pontes, Elvys  and
+      Coustaty, Mickael  and
+      Doucet, Antoine",
+    booktitle = "Proceedings of the 7th Workshop on Balto-Slavic Natural Language Processing",
+    month = aug,
+    year = "2019",
+    address = "Florence, Italy",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/W19-3711",
+    doi = "10.18653/v1/W19-3711",
+    pages = "83--88"
+}
+
+```
+
+# Parent project
+
+This work is is result of the European Union H2020 Project [Embeddia](http://embeddia.eu/). Embeddia is a project that creates NLP tools that focuses on European under-represented languages and that has for objective to improve the accessibility of these tools to the general public and to media enterprises. Visit [Embeddia's Github](https://github.com/orgs/EMBEDDIA/) to discover more NLP tools and models created within this project.
+
